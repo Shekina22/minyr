@@ -6,13 +6,10 @@ import (
 	"log"
 	"os"
 	"strings"
-
-	"github.com/Shekina/funtemp/conv"
 )
 
-func readcsv() {
-	src, err := os.Open("table.csv")
-	src, err := os.Open("kjevik-temp-celsius-20220318-20230318.csv")
+func readcsv(filename string) {
+	src, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -38,8 +35,7 @@ func readcsv() {
 			elementArray := strings.Split(string(linebuf), ";")
 			if len(elementArray) > 3 {
 				celsius := elementArray[3]
-
-				fahr := conv.CelsiusToFahrenheit(celsius)
+				fahr := celsiusToFahrenheit(float64(celsius))
 				log.Println(elementArray[3])
 			}
 			linebuf = nil
@@ -58,4 +54,8 @@ func readcsv() {
 		fahrenheit := celsiusToFahrenheit(celsius)
 		fmt.Printf("%.0f°C = %.1f°F\n", celsius, fahrenheit)
 	}
+}
+
+func celsiusToFahrenheit(celsius float64) float64 {
+	return (celsius - 32) * 5 / 9
 }

@@ -16,12 +16,12 @@ func main() {
 			fmt.Println("exit")
 			os.Exit(0)
 		} else if input == "convert" {
+			readcsv()
 			fmt.Println("Konverterer alle målingene gitt i grader Celsius til graderFahrenheit.")
-			// funksjon som åpner fil, leser linjer, gjør endringer og lagrer nye linjer i en
-			// flere else-if setninger
+		} else if input == "average" {
+			fmt.Println("average")
 		} else {
-			fmt.Println("Venligst velg convert, average eller exit:")
-
+			fmt.Println("convert, average eller exit:")
 		}
 
 	}
