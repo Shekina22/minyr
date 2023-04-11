@@ -1,4 +1,4 @@
-package yr
+package main
 
 import (
 	"testing"
