@@ -1,61 +1,155 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"os"
-	"strings"
+	"strconv"
 )
 
-func readcsv(filename string) {
-	src, err := os.Open(filename)
+func GetAverageLufttemperatur(filename string) (float64, error) {
+	file, err := os.Open(filename)
 	if err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
-	defer src.Close()
-	log.Println(src)
+	defer file.Close()
 
-	var fahr float64
-	var buffer []byte
-	var linebuf []byte // nil
-	buffer = make([]byte, 1)
-	bytesCount := 0
+	// Create a CSV reader
+	reader := csv.NewReader(file)
+	reader.Comma = ';'
+
+	// Skip the header line
+	_, err = reader.Read()
+	if err != nil {
+		return 0, err
+	}
+
+	sum := 0
+	count := 0
+
+	// Read each record and calculate the sum of Lufttemperatur values
 	for {
-		_, err := src.Read(buffer)
-		if err != nil && err != io.EOF {
-			log.Fatal(err)
-		}
-
-		bytesCount++
-		//log.Printf("%c ", buffer[:n])
-		if buffer[0] == 0x0A {
-			log.Println(string(linebuf))
-			// Her
-			elementArray := strings.Split(string(linebuf), ";")
-			if len(elementArray) > 3 {
-				celsius := elementArray[3]
-				fahr := celsiusToFahrenheit(float64(celsius))
-				log.Println(elementArray[3])
-			}
-			linebuf = nil
-		} else {
-			linebuf = append(linebuf, buffer[0])
-		}
-		//log.Println(string(linebuf))
+		record, err := reader.Read()
 		if err == io.EOF {
 			break
 		}
+		if err != nil {
+			return 0, err
+		}
+
+		lufttemperatur, err := strconv.Atoi(record[3]) // Assuming Lufttemperatur is at index 3
+		if err != nil {
+			return 0, err
+		}
+
+		sum += lufttemperatur
+		count++
 	}
 
-	// Loop through the list of temperatures and convert each one to Fahrenheit
-	for _, temp := range temperatures {
-		celsius := temp[0]
-		fahrenheit := celsiusToFahrenheit(celsius)
-		fmt.Printf("%.0f°C = %.1f°F\n", celsius, fahrenheit)
-	}
+	average := float64(sum) / float64(count)
+
+	return average, nil
 }
 
-func celsiusToFahrenheit(celsius float64) float64 {
+func ConvertCelsiusToFahrenheit(filename string, createNewFile bool) error {
+	// Open the original CSV file
+	file, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Read the original CSV data
+	reader := csv.NewReader(file)
+	reader.Comma = ';'
+	records, err := reader.ReadAll()
+	if err != nil {
+		return err
+	}
+
+	var newFilename string
+	if createNewFile {
+		// Create a new CSV file for writing
+		newFilename = "converted_" + filename
+		newFile, err := os.Create(newFilename)
+		if err != nil {
+			return err
+		}
+		defer newFile.Close()
+
+		// Create a CSV writer
+		writer := csv.NewWriter(newFile)
+		writer.Comma = ';'
+
+		// Write the header line
+		header := []string{"Navn", "Stasjon", "Tid(norsk normaltid)", "Lufttemperatur(Fahrenheit)"}
+		err = writer.Write(header)
+		if err != nil {
+			return err
+		}
+
+		// Convert and write each record
+		for _, record := range records {
+			lufttemperatur, err := strconv.Atoi(record[3]) // Assuming Lufttemperatur is at index 3
+			if err != nil {
+				return err
+			}
+
+			fahrenheit := CelsiusToFahrenheit(float64(lufttemperatur))
+			record = append(record, strconv.FormatFloat(fahrenheit, 'f', 2, 64)) // Append the converted value
+			err = writer.Write(record)
+			if err != nil {
+				return err
+			}
+		}
+
+		writer.Flush()
+
+		fmt.Println("Conversion complete. Converted data written to:", newFilename)
+	} else {
+		// Overwrite the original file with the converted data
+		newFilename = filename
+		newFile, err := os.Create(newFilename)
+		if err != nil {
+			return err
+		}
+		defer newFile.Close()
+
+		// Create a CSV writer
+		writer := csv.NewWriter(newFile)
+		writer.Comma = ';'
+
+		// Write the header line
+		header := []string{"Navn", "Stasjon", "Tid(norsk normaltid)", "Lufttemperatur(Fahrenheit)"}
+		err = writer.Write(header)
+		if err != nil {
+			return err
+		}
+
+		// Convert and write each record
+		for _, record := range records {
+			lufttemperatur, err := strconv.Atoi(record[3]) // Assuming Lufttemperatur is at index 3
+			if err != nil {
+				return err
+			}
+
+			fahrenheit := CelsiusToFahrenheit(float64(lufttemperatur))
+			record[3] = strconv.FormatFloat(fahrenheit, 'f', 2, 64) // Update the converted value
+			err = writer.Write(record)
+			if err != nil {
+				return err
+			}
+		}
+
+		writer.Flush()
+
+		fmt.Println("Conversion complete. Overwritten data written to:", newFilename)
+	}
+
+	return nil
+}
+
+func CelsiusToFahrenheit(celsius float64) float64 {
 	return (celsius - 32) * 5 / 9
 }
