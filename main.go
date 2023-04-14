@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"minyr/yr"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/Shekina22/minyr/yr"
 )
 
 func main() {
@@ -66,7 +67,7 @@ func main() {
 			}
 			defer yr.LukkFil(file)
 
-			lines, err := yr.SkrivLinjer(file)
+			lines, err := yr.LesLinjer(file)
 			if err != nil {
 				log.Fatal(err)
 			}
